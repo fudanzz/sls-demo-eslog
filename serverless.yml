@@ -1,0 +1,38 @@
+
+service: sls-demo
+
+plugins:
+  - serverless-pseudo-parameters
+  
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  region: cn-northwest-1
+  endpointType: regional
+  iamRoleStatements:
+    - Effect: Allow
+      Action: kinesis:putRecord
+      Resource: arn:aws-cn:kinesis:#{AWS::Region}:#{AWS::AccountId}:stream/order-events
+    - Effect: Allow
+      Action: sns:publish
+      Resource: 
+        - arn:aws-cn:sns:#{AWS::Region}:#{AWS::AccountId}:restaurant-notification
+
+functions:
+  place-order:
+    handler: functions/place-order.handler
+    events:
+      - http:
+          path: /orders
+          method: post
+
+  notify-restaurant:
+    handler: functions/notify-restaurant.handler
+    events: 
+      - stream: 
+          arn: arn:aws-cn:kinesis:#{AWS::Region}:#{AWS::AccountId}:stream/order-events
+  log-forwarder:
+    handler: lib/log-forwarder.handler
+
+
